@@ -1,12 +1,21 @@
 package model;
-
+import model.annotation.Id;
+import model.annotation.Positive;
+import model.annotation.MaxLength;
 import exception.BankException;
 import exception.InsufficientFundsException;
 import exception.InvalidAmountException;
 
 import java.io.Serializable;
 import java.util.Objects;
+@Id
+private final String accountNumber;
 
+@MaxLength(50)
+private String ownerName;
+
+@Positive(message = "Balance must be greater than zero")
+private long balance;
 public abstract class Account
         implements Transactable, InterestBearing,
         Comparable<Account>, Serializable {
