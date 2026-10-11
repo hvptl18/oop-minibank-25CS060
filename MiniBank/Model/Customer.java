@@ -1,6 +1,10 @@
 package model;
 
-public class Customer implements Cloneable {
+import java.io.Serializable;
+
+public class Customer implements Cloneable, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private String name;
     private String email;
@@ -13,7 +17,6 @@ public class Customer implements Cloneable {
     private Address address;
 
     private static String generateCustomerId() {
-
         return "CUST" + customerCounter++;
     }
 
@@ -22,12 +25,7 @@ public class Customer implements Cloneable {
             String email,
             String mobile) {
 
-        this(
-                name,
-                email,
-                mobile,
-                null
-        );
+        this(name, email, mobile, null);
     }
 
     public Customer(
@@ -40,9 +38,7 @@ public class Customer implements Cloneable {
         this.email = email;
         this.mobile = mobile;
         this.address = address;
-
-        this.customerId =
-                generateCustomerId();
+        this.customerId = generateCustomerId();
     }
 
     public String getName() {
@@ -70,26 +66,24 @@ public class Customer implements Cloneable {
     }
 
     @Override
-    public Customer clone()
-            throws CloneNotSupportedException {
+    public Customer clone() throws CloneNotSupportedException {
 
-        Customer copy =
-                (Customer) super.clone();
+        Customer copy = (Customer) super.clone();
 
-        if (this.address != null) {
-
-            copy.address =
-                    new Address(
-                            this.address.line,
-                            this.address.city,
-                            this.address.pincode
-                    );
+        if (address != null) {
+            copy.address = new Address(
+                    address.getLine(),
+                    address.getCity(),
+                    address.getPincode()
+            );
         }
 
         return copy;
     }
 
-    public static class Address {
+    public static class Address implements Serializable {
+
+        private static final long serialVersionUID = 1L;
 
         private String line;
         private String city;
