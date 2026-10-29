@@ -1,313 +1,113 @@
-import model.*;
-import util.*;
-import service.TransactionProcessor;
-import exception.*;
+import model.Account;
+import repository.Repository;
+import service.BankService;
 
 import java.util.Scanner;
 
 public class MiniBank {
 
-    public record BankInfo(String name, String branch) {}
-
-    public enum MenuOption {
-        OPEN_ACCOUNT,
-        DEPOSIT,
-        WITHDRAW,
-        TRANSFER,
-        EXIT
-    }
-
     public static void main(String[] args) {
 
-        Scanner scanner = new Scanner(System.in);
+        Scanner sc = new Scanner(System.in);
 
-        BankInfo bankInfo = new BankInfo("MiniBank", "CHARUSAT Branch");
+        Repository<Account> repository = new Repository<>();
+        BankService bankService = new BankService(repository);
 
-        System.out.println("=================================");
-        System.out.println(bankInfo);
-        System.out.println("=================================");
-
-        Account[] accounts = {
-                new SavingsAccount("Heer", 5000, 1000),
-                new CurrentAccount("Rahul", 3000, 2000),
-                new FixedDepositAccount("Priya", 10000)
-        };
-
-        // Testing account operations
-        try {
-            accounts[0].deposit(2000);
-
-            accounts[0].withdraw(1000);
-
-            System.out.println("\nAccount Details:");
-            for (Account account : accounts) {
-                System.out.println(account);
-            }
-
-        } catch (BankException e) {
-            System.out.println("Bank Error: " + e.getMessage());
-        }
-
-        // Validator testing
-        System.out.println("\n--- Validator Testing ---");
-
-        System.out.println(
-                "Valid Mobile: " +
-                Validator.isValidMobile("9876543210")
-        );
-
-        System.out.println(
-                "Invalid Mobile: " +
-                Validator.isValidMobile("12345")
-        );
-
-        System.out.println(
-                "Valid Email: " +
-                Validator.isValidEmail("heer@gmail.com")
-        );
-
-        System.out.println(
-                "Invalid Email: " +
-                Validator.isValidEmail("heer@")
-        );
-
-        System.out.println(
-                "Valid PAN: " +
-                Validator.isValidPan("ABCDE1234F")
-        );
-
-        System.out.println(
-                "Invalid PAN: " +
-                Validator.isValidPan("ABC123")
-        );
-
-        System.out.println(
-                "Valid IFSC: " +
-                Validator.isValidIfsc("SBIN0001234")
-        );
-
-        System.out.println(
-                "Invalid IFSC: " +
-                Validator.isValidIfsc("12345")
-        );
-
-        // Command parser testing
-        System.out.println("\n--- Command Parser ---");
-
-        Command command =
-                CommandParser.parse("DEPOSIT AC0001 500");
-
-        System.out.println("Type: " + command.type());
-        System.out.println("Account: " + command.accountNumber());
-        System.out.println("Amount: " + command.amount());
-
-        // Statement
-        System.out.println("\n--- Account Statement ---");
-        System.out.println(
-                StatementFormatter.buildStatement(accounts[0])
-        );
-
-        // Polymorphism
-        System.out.println("--- Interest Rates ---");
-
-        for (Account account : accounts) {
-
-            System.out.println(
-                    account.getClass().getSimpleName()
-                    + " : "
-                    + account.interestRate()
-                    + "%"
-            );
-
-            if (account instanceof SavingsAccount savings) {
-                System.out.println(
-                        "Savings minimum balance: "
-                        + savings.getMinBalance()
-                );
-            }
-        }
-
-        // WithdrawRule using anonymous class
-        WithdrawRule rule1 = new WithdrawRule() {
-
-            @Override
-            public boolean allow(Account account, long amount) {
-                return account.canWithdraw(amount);
-            }
-        };
-
-        System.out.println(
-                "\nAnonymous class withdraw rule: "
-                + rule1.allow(accounts[0], 500)
-        );
-
-        // WithdrawRule using lambda
-        WithdrawRule rule2 =
-                (account, amount) -> account.canWithdraw(amount);
-
-        System.out.println(
-                "Lambda withdraw rule: "
-                + rule2.allow(accounts[0], 500)
-        );
-
-        // Customer
-        Customer customer =
-                new Customer(
-                        "Heer Patel",
-                        "heer@gmail.com",
-                        "9876543210",
-                        new Customer.Address(
-                                "University Road",
-                                "Anand",
-                                "388001"
-                        )
-                );
-
-        System.out.println("\n--- Customer ---");
-        System.out.println("Customer ID: " + customer.getCustomerId());
-        System.out.println("Name: " + customer.getName());
-        System.out.println("Email: " + customer.getEmail());
-        System.out.println("Mobile: " + customer.getMobile());
-        System.out.println(
-                "City: " + customer.getAddress().getCity()
-        );
-
-        // Clone
-        try {
-            Customer clonedCustomer = customer.clone();
-
-            System.out.println(
-                    "Cloned Customer ID: "
-                    + clonedCustomer.getCustomerId()
-            );
-
-        } catch (CloneNotSupportedException e) {
-            System.out.println("Clone failed.");
-        }
-
-        // Account equals and instanceof
-        Account account1 =
-                new SavingsAccount("Test", 1000, 500);
-
-        Account account2 =
-                new SavingsAccount("Test", 1000, 500);
-
-        System.out.println("\n--- equals() and instanceof ---");
-
-        System.out.println(
-                "Account 1 equals Account 2: "
-                + account1.equals(account2)
-        );
-
-        System.out.println(
-                "account1 instanceof Account: "
-                + (account1 instanceof Account)
-        );
-
-        // Transaction Processor
-        System.out.println("\n--- Transaction Processor ---");
-
-        TransactionProcessor processor =
-                new TransactionProcessor();
-
-        for (int i = 1; i <= 10; i++) {
-
-            final int taskId = i;
-
-            processor.submit(() -> {
-
-                try {
-
-                    if (taskId % 2 == 0) {
-                        accounts[0].deposit(100);
-                        System.out.println(
-                                "Task " + taskId +
-                                " deposited ₹100"
-                        );
-                    } else {
-
-                        accounts[0].withdraw(50);
-
-                        System.out.println(
-                                "Task " + taskId +
-                                " withdrew ₹50"
-                        );
-                    }
-
-                } catch (BankException e) {
-
-                    System.out.println(
-                            "Task " + taskId +
-                            " failed: " +
-                            e.getMessage()
-                    );
-                }
-            });
-        }
-
-        processor.stop();
-
-        // Menu
-        runMenu(scanner);
-
-        scanner.close();
-    }
-
-    private static void runMenu(Scanner scanner) {
-
-        boolean running = true;
-
-        while (running) {
-
-            System.out.println("\n========== MiniBank ==========");
+        while (true) {
+            System.out.println("\n===== MINIBANK =====");
             System.out.println("1. Open Account");
             System.out.println("2. Deposit");
             System.out.println("3. Withdraw");
             System.out.println("4. Transfer");
-            System.out.println("5. Exit");
-            System.out.print("Enter your choice: ");
+            System.out.println("5. Account Statement");
+            System.out.println("6. List Accounts");
+            System.out.println("7. Exit");
+            System.out.print("Enter choice: ");
 
             int choice;
 
             try {
-                choice = Integer.parseInt(scanner.nextLine());
-
+                choice = Integer.parseInt(sc.nextLine());
             } catch (NumberFormatException e) {
-
-                System.out.println("Please enter a valid number.");
+                System.out.println("Enter a valid menu number.");
                 continue;
             }
 
-            switch (choice) {
+            try {
+                switch (choice) {
+                    case 1:
+                        System.out.print("Account number: ");
+                        String id = sc.nextLine();
 
-                case 1 -> System.out.println(
-                        "Open Account — to be implemented"
-                );
+                        System.out.print("Owner name: ");
+                        String name = sc.nextLine();
 
-                case 2 -> System.out.println(
-                        "Deposit — to be implemented"
-                );
+                        System.out.print("Initial balance: ");
+                        long initial = Long.parseLong(sc.nextLine());
 
-                case 3 -> System.out.println(
-                        "Withdraw — to be implemented"
-                );
+                        bankService.openAccount(id, name, initial);
+                        System.out.println("Account opened successfully.");
+                        break;
 
-                case 4 -> System.out.println(
-                        "Transfer — to be implemented"
-                );
+                    case 2:
+                        System.out.print("Account number: ");
+                        id = sc.nextLine();
 
-                case 5 -> {
+                        System.out.print("Deposit amount: ");
+                        long deposit = Long.parseLong(sc.nextLine());
 
-                    running = false;
+                        bankService.deposit(id, deposit);
+                        System.out.println("Deposit successful.");
+                        break;
 
-                    System.out.println(
-                            "Thank you for using MiniBank. Goodbye!"
-                    );
+                    case 3:
+                        System.out.print("Account number: ");
+                        id = sc.nextLine();
+
+                        System.out.print("Withdrawal amount: ");
+                        long withdrawal = Long.parseLong(sc.nextLine());
+
+                        bankService.withdraw(id, withdrawal);
+                        System.out.println("Withdrawal successful.");
+                        break;
+
+                    case 4:
+                        System.out.print("Source account: ");
+                        String source = sc.nextLine();
+
+                        System.out.print("Destination account: ");
+                        String destination = sc.nextLine();
+
+                        System.out.print("Transfer amount: ");
+                        long amount = Long.parseLong(sc.nextLine());
+
+                        bankService.transfer(source, destination, amount);
+                        System.out.println("Transfer successful.");
+                        break;
+
+                    case 5:
+                        System.out.print("Account number: ");
+                        id = sc.nextLine();
+
+                        System.out.println(bankService.statement(id));
+                        break;
+
+                    case 6:
+                        for (Account account : bankService.listAccounts()) {
+                            System.out.println(account);
+                        }
+                        break;
+
+                    case 7:
+                        System.out.println("Exiting MiniBank.");
+                        sc.close();
+                        return;
+
+                    default:
+                        System.out.println("Invalid choice.");
                 }
-
-                default -> System.out.println(
-                        "Invalid choice."
-                );
+            } catch (RuntimeException e) {
+                System.out.println("Operation failed: " + e.getMessage());
             }
         }
     }
